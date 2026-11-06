@@ -78,7 +78,9 @@ API 키는 필요하지 않습니다. 가이드상 사용 기간은 **2026-10-27
 
 `npm run reference:sync`는 네트워크에서 공개 페이지와 자산을 다시 받아 기존 스냅샷을 갱신합니다. 기본 실행에는 원본 사이트에 대한 연결이 필요하지 않습니다.
 
-## GitHub 저장소의 하위 폴더로 올리기
+## GitHub 저장소
+
+저장소 주소는 https://github.com/choidoeun2005/LearnBoost 입니다. 프로젝트 파일은 이 저장소의 최상위에 둡니다.
 
 소스와 실행 자산을 함께 올리면 됩니다. `node_modules`나 빌드 결과를 모두 올릴 필요는 없습니다. 받은 사람이 `npm start`를 실행하면 자신의 운영체제에 맞는 패키지와 빌드 결과가 만들어집니다.
 
@@ -91,36 +93,31 @@ API 키는 필요하지 않습니다. 가이드상 사용 기간은 **2026-10-27
 | `.gitignore`, `.env.example` | 프로젝트 안의 기존 `.git` 디렉터리 |
 | 공유하려고 추가한 PDF·노트북 등 자료 | 브라우저의 개인 대화·노트 |
 
-PDF와 `.ipynb`는 제외하지 않습니다. 다만 현재 프로젝트 폴더에는 가이드 원본 파일이 없으므로, 함께 공유하려면 복사 전에 다시 넣어 주세요. 노트북의 코드와 출력에 실제 API 키를 넣지 마세요.
+PDF와 `.ipynb`는 제외하지 않습니다. 다만 현재 프로젝트 폴더에는 가이드 원본 파일이 없으므로, 함께 공유하려면 커밋 전에 다시 넣어 주세요. 노트북의 코드와 출력에 실제 API 키를 넣지 마세요.
 
-아래에서 `YOUR_NAME/YOUR_REPO`를 올릴 GitHub 저장소 주소로 바꾸세요. 대상 저장소는 GitHub에서 미리 생성해 둡니다. 예시는 기존 프로젝트를 유지하면서, 별도 위치에 저장소를 내려받아 `LearnBoost/` 하위 폴더로 복사합니다.
+처음 내려받아 실행할 때:
 
 ```sh
-cd /Users/choidoeun/WebstormProjects
-git clone https://github.com/YOUR_NAME/YOUR_REPO.git learnboost-github
-cd learnboost-github
+git clone https://github.com/choidoeun2005/LearnBoost.git
+cd LearnBoost
+npm start
+```
 
-rsync -av \
-  --exclude='.git' \
-  --include='.env.example' \
-  --exclude-from='/Users/choidoeun/WebstormProjects/LearnBoost/.gitignore' \
-  '/Users/choidoeun/WebstormProjects/LearnBoost/' \
-  './LearnBoost/'
+변경 사항을 커밋하고 올릴 때는 프로젝트 폴더에서 실행합니다.
 
-git add -- LearnBoost/
+```sh
+git add .
 git status --short
 git diff --cached --stat
-git commit -m "Add LearnBoost app with Korean UI and math rendering"
+git commit -m "Update LearnBoost"
 git push -u origin HEAD
 ```
 
-대상에 `LearnBoost/`가 이미 있으면 다른 새 하위 폴더 이름을 사용하세요. 이미 대상 저장소를 로컬에 받아 둔 경우에는 `git clone`을 생략하고 그 저장소로 이동한 뒤 복사합니다. 이 프로젝트 내부의 `.git`는 복사에서 제외하므로, 파일들이 중첩된 Git 저장소로 등록되지 않습니다.
-
-Git 작성자 정보가 없다는 오류가 나오면 대상 저장소에서 한 번만 설정한 뒤 커밋을 다시 실행합니다.
+Git 작성자 정보가 없다는 오류가 나오면 프로젝트 폴더에서 한 번만 설정한 뒤 커밋을 다시 실행합니다.
 
 ```sh
 git config user.name "YOUR_NAME"
 git config user.email "YOUR_GITHUB_EMAIL"
 ```
 
-올린 뒤 다른 사람은 저장소를 내려받아 `LearnBoost/`로 이동하고 `npm start`를 실행하면 됩니다. 브라우저 주소는 `http://127.0.0.1:3000/app`입니다.
+브라우저 주소는 `http://127.0.0.1:3000/app`입니다. 비공개 저장소는 접근 권한이 있는 GitHub 계정으로 로그인해야 내려받을 수 있습니다.
