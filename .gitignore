@@ -1,0 +1,12 @@
+/node_modules/
+/dist/
+/.runtime/
+/data/
+/tmp/
+/coverage/
+/.idea/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example

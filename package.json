@@ -1,0 +1,30 @@
+{
+  "name": "LearnBoost",
+  "version": "1.0.0",
+  "description": "Local SideQuestly-style research workspace with Furiosa RAG",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "build": "vite build",
+    "start": "node scripts/start.mjs",
+    "test": "node --test server/*.test.js",
+    "reference:sync": "node scripts/sync-reference.mjs"
+  },
+  "private": true,
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "katex": "^0.16.47",
+    "lucide-react": "^1.69.0",
+    "multer": "^2.5.0",
+    "pdfjs-dist": "^6.5.438",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "vite": "^8.3.6"
+  }
+}
