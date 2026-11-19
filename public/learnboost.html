@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f2f5f3">
+  <title>LearnBoost</title>
+  <link rel="icon" href="/learnboost.svg">
+  <link rel="stylesheet" href="/learnboost.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/"><img src="/learnboost.svg" alt="" width="34" height="34">LearnBoost</a>
+    <nav aria-label="사이트 메뉴"><a href="/#features">기능</a><a href="/#search">문서 검색</a></nav>
+    <a class="action" href="/app">작업 공간 열기</a>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="intro">
+        <h1 id="hero-title">읽다가 궁금하면,<br>그 자리에서 물어보세요.</h1>
+        <p>PDF에서 한 문장을 고르면 바로 질문할 수 있어요. 답변의 출처를 누르면 원문의 해당 구절로 돌아갑니다.</p>
+        <a class="action" href="/app">학습 시작하기 <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="preview">
+        <div class="preview-document">
+          <span class="preview-label">생태계의 에너지 흐름</span>
+          <h2>먹이사슬과 에너지</h2>
+          <p>생산자는 빛에너지를 이용해 유기물을 만든다. 소비자는 다른 생물을 먹어 에너지를 얻는다.</p>
+          <p><mark>먹이사슬의 위 단계로 갈수록 전달되는 에너지의 양이 줄어든다.</mark></p>
+          <p>생물이 얻은 에너지의 일부는 호흡과 생명 활동에 쓰인다.</p>
+        </div>
+        <div class="preview-answer">
+          <span class="preview-label">선택한 구절에 질문</span>
+          <p class="preview-question">위 단계로 전달되는 에너지가 왜 줄어드나요?</p>
+          <p>생물이 얻은 에너지의 일부를 호흡과 생명 활동에 쓰기 때문이에요. 다음 단계에는 몸에 저장된 에너지의 일부만 전달돼요.</p>
+          <span class="preview-source">[1] 생태계의 에너지 흐름, 1쪽</span>
+        </div>
+      </div>
+    </section>
+    <section class="features" id="features" aria-labelledby="features-title">
+      <h2 id="features-title">원문과 대화를 한 화면에서</h2>
+      <div class="feature-grid">
+        <article><h3>구절을 골라 질문</h3><p>선택한 문장과 페이지가 질문에 함께 붙어요.</p></article>
+        <article><h3>해당 페이지에서 복습</h3><p>답변의 출처를 누르면 원문이 표시돼요. 이전 질문과 답변도 다시 펼칠 수 있어요.</p></article>
+        <article id="branching"><h3>꼬리 질문은 옆 대화에서</h3><p>궁금한 구절에서 새 대화를 열고, 닫으면 읽던 대화로 돌아와요.</p></article>
+      </div>
+    </section>
+    <section class="search" id="search" aria-labelledby="search-title">
+      <h2 id="search-title">문서에 맞춰 검색하고 답변해요</h2>
+      <p>한국어 문서에서 관련 구절을 찾아 답변에 연결합니다. 질문에 따라 Furiosa의 생성 모델을 바꿀 수 있어요.</p>
+      <p>원본 PDF는 이 기기에 저장됩니다. 파일을 올리면 검색에 사용할 텍스트가 Furiosa로 전송됩니다.</p>
+    </section>
+  </main>
+  <footer>LearnBoost</footer>
+</body>
+</html>

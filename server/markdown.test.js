@@ -7,6 +7,25 @@ import { AssistantMarkdown } from '../src/markdown.js';
 const render = content => renderToStaticMarkup(createElement(AssistantMarkdown, { children: content }));
 const countMath = html => [...html.matchAll(/class="katex"/g)].length;
 
+test('renders a deeper explanation within a closed native disclosure', () => {
+  const html = render('핵심 답변\n\n> **더 자세히: 복잡도를 계산하는 법**\n>\n> 구간을 반으로 줄일 때마다 $n$도 절반이 됩니다.\n\n> 인용문');
+  assert.match(html, /<details class="study-detail">\s*<summary>복잡도를 계산하는 법<\/summary>/);
+  assert.doesNotMatch(html, /<details[^>]*\sopen/);
+  assert.match(html, /<blockquote>\s*<p>인용문<\/p>/);
+  assert.equal(countMath(html), 1);
+});
+
+test('turns valid references into source controls without changing code or links', () => {
+  const html = renderToStaticMarkup(createElement(AssistantMarkdown, {
+    children: '원문 [1] [2] `items[1]` [문서](https://example.com/)',
+    sources: [{ name: '교재.pdf', page: 4 }],
+    onSource() {},
+  }));
+  assert.match(html, /class="inline-citation" title="교재\.pdf, 4쪽">\[1\]<\/button>/);
+  assert.match(html, /\[2\] <code>items\[1\]<\/code>/);
+  assert.match(html, /href="https:\/\/example.com\/"/);
+});
+
 test('renders the Korean convexity answer with inline and display LaTeX delimiters', () => {
   const html = render([
     '함수 \\(f\\)의 두 점 \\(x_1\\), \\(x_2\\)와 \\(0 \\leq \\lambda \\leq 1\\)에 대해',

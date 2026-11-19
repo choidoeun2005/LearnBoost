@@ -1,7 +1,7 @@
 {
   "name": "LearnBoost",
   "version": "1.0.0",
-  "description": "Local SideQuestly-style research workspace with Furiosa RAG",
+  "description": "Korean PDF learning workspace with Furiosa RAG",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -18,6 +18,7 @@
     "katex": "^0.16.47",
     "lucide-react": "^1.69.0",
     "multer": "^2.5.0",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.5.438",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

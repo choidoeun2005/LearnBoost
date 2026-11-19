@@ -1,0 +1,46 @@
+.model-picker{position:relative;margin-left:auto;min-width:0}
+.model-pill{display:flex;align-items:center;gap:7px;min-height:31px;max-width:100%;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--hover);color:var(--text);font-size:11px;white-space:nowrap}
+.model-pill:hover,.model-pill[aria-expanded=true]{border-color:var(--green);background:var(--selected)}
+.model-pill>span{overflow:hidden;text-overflow:ellipsis}
+.model-pill-static{margin-left:auto;color:var(--muted)}
+.model-popover{position:absolute;z-index:8;right:0;bottom:calc(100% + 9px);width:min(260px,72vw);border:1px solid var(--border);border-radius:13px;padding:5px;background:var(--panel);box-shadow:0 12px 34px #142c2638}
+.model-popover-heading{padding:6px 8px;color:var(--muted);font-size:11px}
+.model-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px;border-radius:8px;text-align:left;line-height:1.35}
+.model-option:hover,.model-option:focus-visible{background:var(--hover)}
+.model-option[aria-checked=true]{background:var(--selected);color:var(--green)}
+.model-option strong,.model-option small{display:block;font-size:12px}
+.model-option small{font-size:10px;color:var(--muted);margin-top:3px}
+.concepts-page{width:100%}
+.concept-add{display:flex;align-items:end;gap:8px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel);margin-bottom:14px}
+.concept-add label{display:grid;gap:5px;flex:1;font-size:12px}
+.concept-add input,.concept-filters select{height:36px;padding:5px 9px;border:1px solid var(--border);border-radius:8px;background:var(--panel);min-width:0}
+.concept-layout{display:grid;grid-template-columns:minmax(190px,1fr) minmax(270px,1.7fr);gap:12px;align-items:start}
+.concept-browser,.concept-detail{min-width:0;border:1px solid var(--border);border-radius:14px;padding:13px;background:var(--panel)}
+.concept-filters{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.concept-search{display:flex;align-items:center;gap:6px;flex:1;min-width:120px;border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--muted);height:36px}
+.concept-search input{width:100%;min-width:0;background:transparent;border:0;padding:0}
+.concept-filters select{font-size:12px}
+.concept-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px;border-radius:8px;text-align:left}
+.concept-entry:hover,.concept-entry[aria-current=true]{background:var(--hover)}
+.concept-entry[aria-current=true]{box-shadow:inset 3px 0 var(--green)}
+.concept-entry strong,.concept-entry small{display:block;overflow-wrap:anywhere}
+.concept-entry small{font-size:10px;color:var(--muted)}
+.concept-entry-level{display:flex;align-items:center;gap:4px;color:var(--green);font-size:11px;white-space:nowrap}
+.concept-entries>p{font-size:12px;padding:4px 8px}
+.concept-detail{padding:16px}
+.concept-detail-heading{display:flex;align-items:center;gap:8px;color:var(--green)}
+.concept-detail-heading h2{flex:1;margin:0;color:var(--text);font-size:19px;overflow-wrap:anywhere}
+.concept-understanding{border:0;padding:0;margin:15px 0 11px;min-width:0}
+.concept-understanding legend{font-size:12px;font-weight:600;margin-bottom:7px}
+.concept-understanding>div{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.concept-understanding button{border:1px solid var(--border);border-radius:8px;padding:6px 4px;min-height:56px;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.concept-understanding button:hover,.concept-understanding button[aria-pressed=true]{background:var(--selected);border-color:var(--green)}
+.concept-understanding strong{font-size:14px}
+.concept-lock{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.concept-empty{padding:25px;color:var(--muted);font-size:13px}
+.concept-empty p{margin:8px 0 0}
+.toast-action{font-size:12px;color:var(--green);text-decoration:underline;white-space:nowrap}
+.markdown .study-detail{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 10px;margin:10px 0}
+.markdown .study-detail summary{cursor:pointer;color:var(--green);font-size:13px;font-weight:600}
+.markdown .study-detail>div{padding-top:9px}
+@media(max-width:830px){.concept-layout{grid-template-columns:1fr}.concept-entries{max-height:210px;overflow:auto}}
