@@ -6,6 +6,8 @@ import { openStudyReport } from './study-report.js';
 import { ConceptsPage } from './concepts-page.jsx';
 import { applyConceptSuggestions, learningProfile, understandingLevels, workspaceConcepts } from './concepts.js';
 import { ModelPicker } from './model-picker.jsx';
+import { ContextMenu } from './context-menu.jsx';
+import { removeWorkspace } from './workspace-actions.js';
 import './learning.css';
 import { PdfSplitHandle, PdfViewer } from './pdf-viewer.jsx';
 import { citationColor, citationPassage, citedSources, evidenceRange, evidenceTextMap } from './pdf-evidence.js';
@@ -50,6 +52,7 @@ function App() {
   const [view, setView] = useState('Chat');
   const [sidebar, setSidebar] = useState(() => window.innerWidth > 580);
   const [modal, setModal] = useState(null);
+  const [itemMenu, setItemMenu] = useState(null);
   const [toast, setToast] = useState(null);
   const [conceptId, setConceptId] = useState(null);
   const [conceptDraft, setConceptDraft] = useState(null);
@@ -68,6 +71,45 @@ function App() {
   const workspace = state.workspaces.find(item => item.id === state.workspaceId) || state.workspaces[0];
   const update = updater => setState(previous => typeof updater === 'function' ? updater(previous) : { ...previous, ...updater });
   const notify = (message, action) => setToast({ message, action });
+
+  function showContextMenu(event, items) {
+    if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const trigger = event.currentTarget;
+    const rect = trigger.getBoundingClientRect();
+    const keyboard = event.clientX === 0 && event.clientY === 0;
+    setItemMenu({ items, trigger, x: keyboard ? rect.left : event.clientX, y: keyboard ? rect.bottom : event.clientY });
+  }
+
+  function openWorkspace(item) {
+    update({ workspaceId: item.id, branchId: null });
+    setReader(null);
+    setView('Workspaces');
+  }
+
+  function workspaceMenu(event, item) {
+    showContextMenu(event, [
+      { label: '작업 공간 열기', icon: Folder, action: () => openWorkspace(item) },
+      { label: '이름 및 설정 편집', icon: Settings, action: () => { openWorkspace(item); setModal('workspace-settings'); } },
+      { label: '학습 PDF', icon: FileText, action: () => openStudyReport(state, item, notify) },
+      { label: '작업 공간 삭제', icon: Trash2, danger: true, disabled: state.workspaces.length === 1, action: () => {
+        if (!window.confirm(`“${item.name}” 작업 공간과 대화, 필기, 노트, 할 일, 캔버스, 기억, 개념을 삭제할까요? 공용 문서 목록의 파일은 유지됩니다.`)) return;
+        update(previous => removeWorkspace(previous, item.id));
+        if (item.id === workspace.id) {
+          setReader(null); setView('Workspaces'); setConceptDraft(null); setConceptId(null); setNoteId(null);
+        }
+        notify('작업 공간을 삭제했어요.');
+      } },
+    ]);
+  }
+
+  function chatMenu(event, chat) {
+    showContextMenu(event, [
+      { label: '대화 열기', icon: MessageSquare, action: () => openChat(chat.id) },
+      { label: chat.pinned ? '고정 해제' : '대화 고정', icon: Pin, action: () => update(previous => ({ ...previous, chats: previous.chats.map(item => item.id === chat.id ? { ...item, pinned: !item.pinned } : item) })) },
+    ]);
+  }
 
   function openConcept(id, workspaceId = workspace.id) {
     if (workspaceId !== workspace.id) update({ workspaceId, branchId: null });
@@ -178,14 +220,14 @@ function App() {
     setNoteId(note.id); return note;
   }
   function capture(content) { addNote(content.slice(0, 50), content); notify('노트와 오늘의 일지에 저장했어요.'); }
-  const context = { state, update, workspace, view, setView, notify, documents, refreshDocuments, config, openChat, createChat, branch, capture, addNote, noteId, setNoteId, setModal, setReader, conceptId, conceptDraft, setConceptId, setConceptDraft, draftConcept, reviewConcepts };
+  const context = { state, update, workspace, view, setView, notify, documents, refreshDocuments, config, openChat, createChat, branch, capture, addNote, noteId, setNoteId, setModal, setReader, conceptId, conceptDraft, setConceptId, setConceptDraft, draftConcept, reviewConcepts, showContextMenu, chatMenu, workspaceMenu };
   const workspaceChats = state.chats.filter(chat => chat.workspaceId === workspace.id);
   const activeChat = state.chats.find(chat => chat.id === state.activeChatId && chat.workspaceId === workspace.id);
   const branchChat = state.chats.find(chat => chat.id === state.branchId && chat.workspaceId === workspace.id);
 
   return <WorkspaceContext.Provider value={context}><div className={`app-shell ${sidebar ? '' : 'sidebar-hidden'}`}>
-    <header className="app-topbar"><div className="global-tools"><IconButton icon={PanelLeft} label="사이드바 전환" onClick={() => setSidebar(!sidebar)}/><a className="icon-button" href="/" title="홈" aria-label="홈"><Home size={20}/></a><IconButton icon={CalendarDays} label="일지" onClick={() => setView('Journal')}/><IconButton icon={Search} label="검색 (Ctrl+K 또는 ⌘K)" onClick={() => setModal('search')}/><IconButton icon={Zap} label="빠른 기록 (Ctrl+P 또는 ⌘P)" onClick={() => setModal('quick')}/><IconButton icon={Brain} label="기억" onClick={() => setView('Memory')}/></div><button className="breadcrumb workspace-crumb" onClick={() => setView('Workspaces')}><Folder size={18}/>{workspace.name}</button><ChevronRight size={15} className="muted"/><span className="breadcrumb current-crumb">{view === 'Chat' ? activeChat?.title || '새 대화' : viewLabels[view]}</span><span className="local-label"><span/>로컬 작업 공간</span></header>
-    {sidebar && <aside className="sidebar"><div className="sidebar-main"><nav>{['Workspaces', 'Journal', 'Notes', 'Documents', 'Tasks', 'Canvas', 'Concepts'].map(label => { const Icon = icons[label]; return <button key={viewLabels[label]} className={`nav-item ${view === label ? 'active' : ''}`} onClick={() => { setView(label); setReader(null); }}><Icon size={19} strokeWidth={1.7}/>{viewLabels[label]}{label === 'Tasks' && <span className="count">{state.tasks.filter(task => !task.done && task.workspaceId === workspace.id).length}</span>}</button>; })}</nav><div className="sidebar-section"><span>고정한 대화</span></div>{workspaceChats.filter(chat => chat.pinned).length ? workspaceChats.filter(chat => chat.pinned).map(chat => <button key={chat.id} className="recent-item" onClick={() => openChat(chat.id)}><Pin size={13}/>{chat.title}</button>) : <p className="sidebar-hint">아직 고정한 대화가 없어요</p>}<div className="sidebar-section"><span>최근 대화</span><IconButton icon={Plus} label="새 대화" onClick={() => createChat()}/></div>{workspaceChats.toReversed().slice(0, 8).map(chat => <button key={chat.id} className={`recent-item ${chat.id === state.activeChatId && view === 'Chat' ? 'selected' : ''}`} onClick={() => openChat(chat.id)}>{chat.parentId && <GitBranch size={13}/>}<span>{chat.title}</span></button>)}<div className="sidebar-section"><span>작업 공간</span><IconButton icon={Plus} label="새 작업 공간" onClick={() => setModal('workspace')}/></div>{state.workspaces.map(item => <button key={item.id} className={`nav-item ${item.id === workspace.id ? 'active' : ''}`} onClick={() => { update({ workspaceId: item.id, branchId: null }); setView('Workspaces'); }}><Folder size={19}/><span>{item.name}</span><ChevronRight size={16}/></button>)}</div><div className="sidebar-footer"><button className="profile" onClick={() => setModal('settings')}><span className="avatar">L</span><strong>LearnBoost</strong></button><IconButton icon={theme === 'dark' ? Sun : Moon} label="테마 변경" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}/><IconButton icon={Settings} label="설정" onClick={() => setModal('settings')}/></div><div className="sidebar-caption">생각을 잇는 공간</div></aside>}
+    <header className="app-topbar"><div className="global-tools"><IconButton icon={PanelLeft} label="사이드바 전환" onClick={() => setSidebar(!sidebar)}/><a className="icon-button" href="/" title="홈" aria-label="홈"><Home size={20}/></a><IconButton icon={CalendarDays} label="일지" onClick={() => setView('Journal')}/><IconButton icon={Search} label="검색 (Ctrl+K 또는 ⌘K)" onClick={() => setModal('search')}/><IconButton icon={Zap} label="빠른 기록 (Ctrl+P 또는 ⌘P)" onClick={() => setModal('quick')}/><IconButton icon={Brain} label="기억" onClick={() => setView('Memory')}/></div><button className="breadcrumb workspace-crumb" onContextMenu={event => workspaceMenu(event, workspace)} onClick={() => setView('Workspaces')}><Folder size={18}/>{workspace.name}</button><ChevronRight size={15} className="muted"/><span className="breadcrumb current-crumb">{view === 'Chat' ? activeChat?.title || '새 대화' : viewLabels[view]}</span><span className="local-label"><span/>로컬 작업 공간</span></header>
+    {sidebar && <aside className="sidebar"><div className="sidebar-main"><nav>{['Workspaces', 'Journal', 'Notes', 'Documents', 'Tasks', 'Canvas', 'Concepts'].map(label => { const Icon = icons[label]; return <button key={viewLabels[label]} className={`nav-item ${view === label ? 'active' : ''}`} onClick={() => { setView(label); setReader(null); }}><Icon size={19} strokeWidth={1.7}/>{viewLabels[label]}{label === 'Tasks' && <span className="count">{state.tasks.filter(task => !task.done && task.workspaceId === workspace.id).length}</span>}</button>; })}</nav><div className="sidebar-section"><span>고정한 대화</span></div>{workspaceChats.filter(chat => chat.pinned).length ? workspaceChats.filter(chat => chat.pinned).map(chat => <button key={chat.id} className="recent-item" onContextMenu={event => chatMenu(event, chat)} onClick={() => openChat(chat.id)}><Pin size={13}/>{chat.title}</button>) : <p className="sidebar-hint">아직 고정한 대화가 없어요</p>}<div className="sidebar-section"><span>최근 대화</span><IconButton icon={Plus} label="새 대화" onClick={() => createChat()}/></div>{workspaceChats.toReversed().slice(0, 8).map(chat => <button key={chat.id} className={`recent-item ${chat.id === state.activeChatId && view === 'Chat' ? 'selected' : ''}`} onContextMenu={event => chatMenu(event, chat)} onClick={() => openChat(chat.id)}>{chat.parentId && <GitBranch size={13}/>}<span>{chat.title}</span></button>)}<div className="sidebar-section"><span>작업 공간</span><IconButton icon={Plus} label="새 작업 공간" onClick={() => setModal('workspace')}/></div>{state.workspaces.map(item => <button key={item.id} className={`nav-item ${item.id === workspace.id ? 'active' : ''}`} onContextMenu={event => workspaceMenu(event, item)} onClick={() => openWorkspace(item)}><Folder size={19}/><span>{item.name}</span><ChevronRight size={16}/></button>)}</div><div className="sidebar-footer"><button className="profile" onClick={() => setModal('settings')}><span className="avatar">L</span><strong>LearnBoost</strong></button><IconButton icon={theme === 'dark' ? Sun : Moon} label="테마 변경" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}/><IconButton icon={Settings} label="설정" onClick={() => setModal('settings')}/></div><div className="sidebar-caption">생각을 잇는 공간</div></aside>}
     <main className={`workspace-content ${view === 'Chat' ? 'chat-layout' : ''} ${reader ? 'has-reader' : ''} ${reader?.showChat ? 'reader-question-open' : ''}`} style={reader ? { '--reader-width': `${pdfWidth}%` } : undefined}>
       {view === 'Chat' ? <div className={`chat-dock ${reader ? 'reader-open' : ''}`}>
         {activeChat ? <ChatPane key={activeChat.id} chat={activeChat} jumpTo={reader?.messageId} covered={Boolean(reader && branchChat)}/> : <div className="empty-page"><h1>궁금한 것부터 시작해 보세요.</h1><button className="primary-button" onClick={() => createChat()}>대화 시작하기</button></div>}
@@ -198,6 +240,7 @@ function App() {
     <aside className="right-rail">{[['Journal', CalendarDays], ['Tasks', Check], ['Notes', NotebookPen], ['Memory', Brain], ['Canvas', Network], ['Chat', MessageSquare]].map(([label, Icon]) => <IconButton key={viewLabels[label]} icon={Icon} label={viewLabels[label]} className={view === label ? 'active' : ''} onClick={() => setView(label)}/>)}</aside>
     {modal && <AppModal modal={modal} onClose={() => setModal(null)}/>}
     {toast && <div className="toast"><span role="status">{toast.message}</span>{toast.action && <button type="button" className="toast-action" onClick={() => { toast.action.open(); setToast(null); }}>{toast.action.label}</button>}<IconButton icon={X} label="알림 닫기" onClick={() => setToast(null)}/></div>}
+    {itemMenu && <ContextMenu menu={itemMenu} close={() => setItemMenu(null)}/>}
   </div></WorkspaceContext.Provider>;
 }
 
@@ -378,7 +421,7 @@ function ChatPane({ chat, side = false, jumpTo, covered = false }) {
 }
 
 function WorkspacePage() {
-  const { state, workspace, view, setView, createChat, openChat, addNote, setNoteId, setModal, update, conceptId, conceptDraft, setConceptId, setConceptDraft, notify } = useWorkspace();
+  const { state, workspace, view, setView, createChat, openChat, addNote, setNoteId, setModal, update, conceptId, conceptDraft, setConceptId, setConceptDraft, notify, chatMenu } = useWorkspace();
   if (view === 'Notes') return <NotesPage/>;
   if (view === 'Journal') return <JournalPage/>;
   if (view === 'Documents') return <DocumentsPage/>;
@@ -386,11 +429,11 @@ function WorkspacePage() {
   if (view === 'Canvas') return <CanvasPage/>;
   if (view === 'Concepts') return <ConceptsPage key={workspace.id} state={state} workspace={workspace} update={update} selectedId={conceptId} onSelect={setConceptId} draft={conceptDraft?.workspaceId === workspace.id ? conceptDraft.name : null} onDraft={setConceptDraft} notify={notify}/>;
   if (view === 'Memory') return <MemoryPage/>;
-  return <div className="page workspace-home"><div className="page-eyebrow"><Folder size={17}/>내 작업 공간</div><div className="page-title"><h1>{workspace.name}</h1><IconButton icon={Settings} label="작업 공간 설정" onClick={() => setModal('workspace-settings')}/></div><p className="page-subtitle">질문을 모으고, 생각을 연결하고, 나만의 지식을 쌓는 공간이에요.</p><div className="quick-actions"><button onClick={() => createChat()}><MessageSquare size={22}/><strong>대화 시작하기</strong><span>새로운 질문으로 시작해요</span></button><button onClick={() => { addNote(); setView('Notes'); }}><NotebookPen size={22}/><strong>노트 쓰기</strong><span>떠오른 생각을 기록해요</span></button><button onClick={() => setView('Documents')}><FileText size={22}/><strong>문서 읽기</strong><span>자료를 모아 함께 살펴봐요</span></button></div><h3 className="section-title">최근 대화</h3>{state.chats.filter(chat => chat.workspaceId === workspace.id).toReversed().map(chat => <button key={chat.id} className="list-row" onClick={() => openChat(chat.id)}>{chat.parentId ? <GitBranch size={19}/> : <MessageSquare size={19}/>}<span>{chat.title}</span><small>{chat.date}</small><ChevronRight size={16}/></button>)}<h3 className="section-title">내 노트</h3><div className="note-grid">{state.notes.filter(note => note.workspaceId === workspace.id).map(note => <button key={note.id} className="note-card" onClick={() => { setNoteId(note.id); setView('Notes'); }}><NotebookPen size={19}/><h3>{note.title}</h3><p>{note.nodes[0]?.text}</p><small>{note.date}</small></button>)}</div></div>;
+  return <div className="page workspace-home"><div className="page-eyebrow"><Folder size={17}/>내 작업 공간</div><div className="page-title"><h1>{workspace.name}</h1><IconButton icon={Settings} label="작업 공간 설정" onClick={() => setModal('workspace-settings')}/></div><p className="page-subtitle">질문을 모으고, 생각을 연결하고, 나만의 지식을 쌓는 공간이에요.</p><div className="quick-actions"><button onClick={() => createChat()}><MessageSquare size={22}/><strong>대화 시작하기</strong><span>새로운 질문으로 시작해요</span></button><button onClick={() => { addNote(); setView('Notes'); }}><NotebookPen size={22}/><strong>노트 쓰기</strong><span>떠오른 생각을 기록해요</span></button><button onClick={() => setView('Documents')}><FileText size={22}/><strong>문서 읽기</strong><span>자료를 모아 함께 살펴봐요</span></button></div><h3 className="section-title">최근 대화</h3>{state.chats.filter(chat => chat.workspaceId === workspace.id).toReversed().map(chat => <button key={chat.id} className="list-row" onContextMenu={event => chatMenu(event, chat)} onClick={() => openChat(chat.id)}>{chat.parentId ? <GitBranch size={19}/> : <MessageSquare size={19}/>}<span>{chat.title}</span><small>{chat.date}</small><ChevronRight size={16}/></button>)}<h3 className="section-title">내 노트</h3><div className="note-grid">{state.notes.filter(note => note.workspaceId === workspace.id).map(note => <button key={note.id} className="note-card" onClick={() => { setNoteId(note.id); setView('Notes'); }}><NotebookPen size={19}/><h3>{note.title}</h3><p>{note.nodes[0]?.text}</p><small>{note.date}</small></button>)}</div></div>;
 }
 
 function NotesPage() {
-  const { state, update, workspace, noteId, setNoteId, addNote, createChat, notify } = useWorkspace();
+  const { state, update, workspace, noteId, setNoteId, addNote, createChat, notify, showContextMenu } = useWorkspace();
   const [focusedNode, setFocusedNode] = useState(null);
   const notes = state.notes.filter(note => note.workspaceId === workspace.id);
   const note = notes.find(item => item.id === noteId) || notes[0];
@@ -401,11 +444,28 @@ function NotesPage() {
     const nodes = [...note.nodes]; nodes.splice(index + 1, 0, node); modify({ nodes });
     setTimeout(() => document.getElementById(`node-${node.id}`)?.focus(), 0);
   }
+  function removeNote(item) {
+    if (!window.confirm(`“${item.title}” 노트를 삭제할까요? 캔버스에 배치한 카드와 그 연결도 삭제돼요.`)) return;
+    update(previous => {
+      const removed = new Set(previous.cards.filter(card => card.noteId === item.id).map(card => card.id));
+      return {
+        ...previous,
+        notes: previous.notes.filter(entry => entry.id !== item.id),
+        cards: previous.cards.filter(card => !removed.has(card.id)),
+        edges: previous.edges.filter(edge => !removed.has(edge.from) && !removed.has(edge.to)),
+      };
+    });
+    if (noteId === item.id) setNoteId(null);
+  }
   let hiddenDepth = null;
   const focusedIndex = focusedNode ? note?.nodes.findIndex(node => node.id === focusedNode) : -1;
   let focusedEnd = note?.nodes.length;
   if (focusedIndex >= 0) { const next = note.nodes.findIndex((node, index) => index > focusedIndex && node.depth <= note.nodes[focusedIndex].depth); if (next >= 0) focusedEnd = next; }
-  return <div className="notes-layout"><aside className="notes-list"><div className="list-heading"><h3>노트</h3><IconButton icon={Plus} label="새 노트" onClick={() => addNote()}/></div>{notes.map(item => <button key={item.id} className={item.id === note?.id ? 'active' : ''} onClick={() => setNoteId(item.id)}><NotebookPen size={16}/>{item.title}</button>)}</aside><div className="note-editor">{note ? <><div className="note-meta"><span>{note.date} · 이 기기에 저장됨</span><IconButton icon={Download} label="노트 내보내기" onClick={() => downloadJson(note, `${note.title}.json`)}/></div><input className="note-title" aria-label="노트 제목" value={note.title} onChange={event => modify({ title: event.target.value })}/>{focusedNode && <button className="text-button" onClick={() => setFocusedNode(null)}><ArrowLeft size={14}/>전체 노트로 돌아가기</button>}<div className="outline">{note.nodes.map((node, index) => {
+  return <div className="notes-layout"><aside className="notes-list"><div className="list-heading"><h3>노트</h3><IconButton icon={Plus} label="새 노트" onClick={() => addNote()}/></div>{notes.map(item => <button key={item.id} className={item.id === note?.id ? 'active' : ''} onClick={() => setNoteId(item.id)} onContextMenu={event => showContextMenu(event, [
+    { label: '노트 열기', icon: NotebookPen, action: () => setNoteId(item.id) },
+    { label: '노트 내보내기', icon: Download, action: () => downloadJson(item, `${item.title}.json`) },
+    { label: '노트 삭제', icon: Trash2, danger: true, action: () => removeNote(item) },
+  ])}><NotebookPen size={16}/>{item.title}</button>)}</aside><div className="note-editor">{note ? <><div className="note-meta"><span>{note.date} · 이 기기에 저장됨</span><IconButton icon={Download} label="노트 내보내기" onClick={() => downloadJson(note, `${note.title}.json`)}/></div><input className="note-title" aria-label="노트 제목" value={note.title} onChange={event => modify({ title: event.target.value })}/>{focusedNode && <button className="text-button" onClick={() => setFocusedNode(null)}><ArrowLeft size={14}/>전체 노트로 돌아가기</button>}<div className="outline">{note.nodes.map((node, index) => {
     if (focusedIndex >= 0 && (index < focusedIndex || index >= focusedEnd)) return null;
     if (hiddenDepth !== null && node.depth > hiddenDepth) return null;
     hiddenDepth = node.collapsed ? node.depth : null;
@@ -431,15 +491,25 @@ function JournalPage() {
 }
 
 function TasksPage() {
-  const { state, update, workspace } = useWorkspace();
+  const { state, update, workspace, showContextMenu } = useWorkspace();
   const [input, setInput] = useState('');
   const [filter, setFilter] = useState('All');
   const tasks = state.tasks.filter(task => task.workspaceId === workspace.id && (filter === 'All' || (filter === 'Done' ? task.done : !task.done)));
-  return <div className="page"><div className="page-title"><h1>할 일</h1><span className="pill">{tasks.filter(task => !task.done).length}개 남음</span></div><p className="page-subtitle">작은 실천으로 생각을 한 걸음 더 나아가게 해 보세요.</p><form className="inline-form" onSubmit={event => { event.preventDefault(); if (!input.trim()) return; update(previous => ({ ...previous, tasks: [...previous.tasks, { id: uid(), workspaceId: workspace.id, text: input.trim(), due: dayKey(), done: false }] })); setInput(''); }}><Plus size={19}/><input aria-label="새 할 일" placeholder="할 일을 적어 주세요…" value={input} onChange={event => setInput(event.target.value)}/><button className="primary-button" disabled={!input.trim()}>할 일 추가</button></form><div className="tabs">{['All', 'To do', 'Done'].map(label => <button key={viewLabels[label]} className={filter === label ? 'active' : ''} onClick={() => setFilter(label)}>{viewLabels[label]}</button>)}</div>{tasks.map(task => <div className={`task-row task-item ${task.done ? 'done' : ''}`} key={task.id}><input type="checkbox" aria-label={`완료 표시: ${task.text}`} checked={task.done} onChange={() => update(previous => ({ ...previous, tasks: previous.tasks.map(item => item.id === task.id ? { ...item, done: !item.done } : item) }))}/><span>{task.text}</span><input type="date" aria-label={`마감일: ${task.text}`} value={task.due} onChange={event => update(previous => ({ ...previous, tasks: previous.tasks.map(item => item.id === task.id ? { ...item, due: event.target.value } : item) }))}/><IconButton icon={Trash2} label={`삭제: ${task.text}`} onClick={() => update(previous => ({ ...previous, tasks: previous.tasks.filter(item => item.id !== task.id) }))}/></div>)}{!tasks.length && <div className="empty-page"><Check size={30}/><h2>잠시 여유를 가져도 좋아요.</h2><p>이 목록에는 할 일이 없어요.</p></div>}</div>;
+  function toggleTask(task) {
+    update(previous => ({ ...previous, tasks: previous.tasks.map(item => item.id === task.id ? { ...item, done: !item.done } : item) }));
+  }
+  function removeTask(task) {
+    if (!window.confirm(`“${task.text}” 할 일을 삭제할까요?`)) return;
+    update(previous => ({ ...previous, tasks: previous.tasks.filter(item => item.id !== task.id) }));
+  }
+  return <div className="page"><div className="page-title"><h1>할 일</h1><span className="pill">{tasks.filter(task => !task.done).length}개 남음</span></div><p className="page-subtitle">작은 실천으로 생각을 한 걸음 더 나아가게 해 보세요.</p><form className="inline-form" onSubmit={event => { event.preventDefault(); if (!input.trim()) return; update(previous => ({ ...previous, tasks: [...previous.tasks, { id: uid(), workspaceId: workspace.id, text: input.trim(), due: dayKey(), done: false }] })); setInput(''); }}><Plus size={19}/><input aria-label="새 할 일" placeholder="할 일을 적어 주세요…" value={input} onChange={event => setInput(event.target.value)}/><button className="primary-button" disabled={!input.trim()}>할 일 추가</button></form><div className="tabs">{['All', 'To do', 'Done'].map(label => <button key={viewLabels[label]} className={filter === label ? 'active' : ''} onClick={() => setFilter(label)}>{viewLabels[label]}</button>)}</div>{tasks.map(task => <div className={`task-row task-item ${task.done ? 'done' : ''}`} key={task.id} onContextMenu={event => showContextMenu(event, [
+    { label: task.done ? '완료 취소' : '완료 표시', icon: Check, action: () => toggleTask(task) },
+    { label: '할 일 삭제', icon: Trash2, danger: true, action: () => removeTask(task) },
+  ])}><input type="checkbox" aria-label={`완료 표시: ${task.text}`} checked={task.done} onChange={() => toggleTask(task)}/><span>{task.text}</span><input type="date" aria-label={`마감일: ${task.text}`} value={task.due} onChange={event => update(previous => ({ ...previous, tasks: previous.tasks.map(item => item.id === task.id ? { ...item, due: event.target.value } : item) }))}/><IconButton icon={Trash2} label={`삭제: ${task.text}`} onClick={() => removeTask(task)}/></div>)}{!tasks.length && <div className="empty-page"><Check size={30}/><h2>잠시 여유를 가져도 좋아요.</h2><p>이 목록에는 할 일이 없어요.</p></div>}</div>;
 }
 
 function DocumentsPage() {
-  const { documents, refreshDocuments, notify, setReader } = useWorkspace();
+  const { documents, refreshDocuments, notify, setReader, showContextMenu } = useWorkspace();
   const [busy, setBusy] = useState('');
   const input = useRef(null);
   async function upload(file) {
@@ -458,6 +528,10 @@ function DocumentsPage() {
     try { await api(`/documents/${document.id}/index`, { method: 'POST' }); await refreshDocuments(); notify('문서 검색 준비가 끝났어요. 대화에 첨부하고 질문해 보세요.'); }
     catch (error) { await refreshDocuments(); notify(error.message); } finally { setBusy(''); }
   }
+  async function removeDocument(document) {
+    if (!window.confirm(`“${document.name}” 파일을 로컬 저장소에서 삭제할까요?`)) return;
+    try { await api(`/documents/${document.id}`, { method: 'DELETE' }); await refreshDocuments(); } catch (error) { notify(error.message); }
+  }
   return <div className="page documents-page">
     <div className="page-title"><h1>문서</h1><button className="primary-button" onClick={() => input.current?.click()} disabled={Boolean(busy)}><Upload size={16}/>문서 업로드</button></div>
     <input ref={input} type="file" accept=".pdf,.txt,.md" hidden onChange={event => upload(event.target.files[0])}/>
@@ -471,19 +545,21 @@ function DocumentsPage() {
       const preparing = document.indexing || busy === document.id;
       const failed = document.indexStatus === 'failed';
       const status = preparing ? document.indexStatus === 'queued' ? '검색 준비 대기' : '검색 준비 중' : failed ? '검색 준비 실패' : document.indexed ? '검색 가능' : '로컬 파일';
-      return <div className="document-row" key={document.id}>
+      const open = () => setReader({ id: document.id, page: 1 });
+      return <div className="document-row" key={document.id} onContextMenu={event => showContextMenu(event, [
+        { label: '문서 열기', icon: FileText, action: open },
+        ...(!document.indexed || failed ? [{ label: failed ? '검색 준비 다시 시도' : '검색 준비', icon: Zap, action: () => indexDocument(document), disabled: Boolean(busy) || preparing }] : []),
+        { label: '문서 삭제', icon: Trash2, danger: true, action: () => removeDocument(document), disabled: Boolean(busy) || preparing },
+      ])}>
         <div className="file-icon"><FileText size={24}/></div>
-        <button className="document-name" onClick={() => setReader({ id: document.id, page: 1 })}><strong>{document.name}</strong><small>{document.pages}쪽, {Math.ceil(document.size / 1024)} KB</small></button>
+        <button className="document-name" onClick={open}><strong>{document.name}</strong><small>{document.pages}쪽, {Math.ceil(document.size / 1024)} KB</small></button>
         <span className={`document-index-status ${failed ? 'error-text' : document.indexed ? 'success-text' : 'muted'}`} role="status">
           {preparing && <LoaderCircle size={13} className="spin"/>}{status}
         </span>
         {!preparing && (failed || !document.indexed) && <button className="subtle-button" disabled={Boolean(busy)} onClick={() => indexDocument(document)}>
           <Zap size={15}/>{failed ? '다시 시도' : '검색 준비'}
         </button>}
-        <IconButton icon={Trash2} label={`${document.name} 삭제`} disabled={Boolean(busy) || document.indexing} onClick={async () => {
-          if (!window.confirm(`“${document.name}” 파일을 로컬 저장소에서 삭제할까요?`)) return;
-          try { await api(`/documents/${document.id}`, { method: 'DELETE' }); await refreshDocuments(); } catch (error) { notify(error.message); }
-        }}/>
+        <IconButton icon={Trash2} label={`${document.name} 삭제`} disabled={Boolean(busy) || document.indexing} onClick={() => removeDocument(document)}/>
       </div>;
     })}</div>
   </div>;
