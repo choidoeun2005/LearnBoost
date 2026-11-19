@@ -127,8 +127,12 @@ function PdfPage({ pdf, PageTextLayer, pageNumber, width, zoom, highlights, targ
       jumped.current = jump;
       const scroll = scrollRef.current;
       const activeBox = nextMarks.find(mark => mark.id === target)?.box;
-      const top = activeBox ? scroll.scrollTop + sheet.top - scroll.getBoundingClientRect().top + activeBox.top - scroll.clientHeight * 0.35 : 0;
-      scroll.scrollTo({ top, behavior: 'instant' });
+      const viewport = scroll.getBoundingClientRect();
+      const top = activeBox ? scroll.scrollTop + sheet.top - viewport.top + activeBox.top - scroll.clientHeight * 0.35 : 0;
+      const markLeft = activeBox ? sheet.left - viewport.left + activeBox.left : 0;
+      const outsideWidth = activeBox && (markLeft < 0 || markLeft + activeBox.width > scroll.clientWidth);
+      const left = outsideWidth ? scroll.scrollLeft + markLeft - scroll.clientWidth * 0.12 : scroll.scrollLeft;
+      scroll.scrollTo({ top, left, behavior: 'instant' });
     }
   }, [runs, highlights, anchors, jump, target, scrollRef]);
 
